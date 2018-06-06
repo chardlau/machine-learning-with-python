@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 from scipy import optimize
 import matplotlib.pyplot as plt
@@ -17,6 +18,7 @@ data = {
     ]
 }
 
+
 # 解析数据
 def parseXYC(d):
     X = []
@@ -32,6 +34,7 @@ def parseXYC(d):
         c.append(-1)
     return X, y, c, 0
 
+
 X, y, c, c0 = parseXYC(data)
 
 # 求解“F = (1/2)*x.T*H*x + c*x + c0”函数的最小情况下x的取值
@@ -40,17 +43,24 @@ X, y, c, c0 = parseXYC(data)
 # 计算H矩阵，根据样本数目应是一个len(X)xlen(X)的矩阵
 H = np.array([y[i] * y[j] * np.dot(X[i], X[j]) for i in range(len(X)) for j in range(len(X))]).reshape(len(X), len(X))
 
+
 # 定义二项规划方程fun及其雅各比方程jac
 def fun(x, sign=1.):
     return sign * (0.5 * np.dot(x.T, np.dot(H, x))+ np.dot(c, x) + c0)
+
+
 def jac(x, sign=1.):
     return sign * (np.dot(x.T, H) + c)
+
 
 # 定义等式约束条件方程feq及其雅各比方程jeq
 def feq(x):
     return np.dot(y, x)
+
+
 def jeq(x):
     return np.array(y)
+
 
 # 生成相关参数
 diff = 1e-16
