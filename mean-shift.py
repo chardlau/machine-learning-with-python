@@ -16,65 +16,80 @@ X = np.array([
 ])
 
 
-def mean_shift(data, radius=2):
-    # Cheat each data point as a centroid
-    centroids = {}
+def mean_shift(data, radius=2.0):
+    clusters = []
     for i in range(len(data)):
-        centroids[i] = data[i]
+        cluster_centroid = data[i]
+        cluster_frequency = np.zeros(len(data))
 
-    while True:
-        new_centroids = []
-        for i in centroids:
-            in_circle = []
-            centroid = centroids[i]
-            for j in centroids:
-                if np.linalg.norm(centroids[j] - centroid) < radius:
-                    in_circle.append(centroids[j])
-            # Calculate new centroid
-            new_centroid = np.average(in_circle, axis=0)
-            new_centroids.append(tuple(new_centroid))
+        # Search points in circle
+        while True:
+            temp_data = []
+            for j in range(len(data)):
+                v = data[j]
+                # Handle points in the circles
+                if np.linalg.norm(v - cluster_centroid) <= radius:
+                    temp_data.append(v)
+                    cluster_frequency[i] += 1
 
-        # Remove redundant centroids
-        uniques = sorted(list(set(new_centroids)))
-
-        # Update centroids
-        old_centroids = dict(centroids)
-        new_centroids = {}
-        for i in range(len(uniques)):
-            new_centroids[i] = np.array(uniques[i])
-        centroids = new_centroids
-
-        show_centroids(old_centroids)
-
-        print('old_centroids: ', old_centroids)
-        print('new_centroids: ', new_centroids)
-        # Check should we stop or not
-        stop_loop = True
-        for i in new_centroids:
-            # The length of prev_centroids must large or equal then the one of centroids
-            # So there is not any problem
-            if not np.array_equal(new_centroids[i], old_centroids[i]):
-                stop_loop = False
+            # Update centroid
+            old_centroid = cluster_centroid
+            new_centroid = np.average(temp_data, axis=0)
+            cluster_centroid = new_centroid
+            # Find the mode
+            if np.array_equal(new_centroid, old_centroid):
                 break
 
-        if stop_loop:
-            break
+        # Combined 'same' clusters
+        has_same_cluster = False
+        for cluster in clusters:
+            if np.linalg.norm(cluster['centroid'] - cluster_centroid) <= radius:
+                has_same_cluster = True
+                cluster['frequency'] = cluster['frequency'] + cluster_frequency
+                break
 
-    return centroids
+        if not has_same_cluster:
+            clusters.append({
+                'centroid': cluster_centroid,
+                'frequency': cluster_frequency
+            })
+
+    print('clusters (', len(clusters), '): ', clusters)
+    clustering(data, clusters)
+    show_clusters(clusters, radius)
 
 
-def show_centroids(centroids):
+# Clustering data using frequency
+def clustering(data, clusters):
+    t = []
+    for cluster in clusters:
+        cluster['data'] = []
+        t.append(cluster['frequency'])
+    t = np.array(t)
+    # Clustering
+    for i in range(len(data)):
+        column_frequency = t[:, i]
+        cluster_index = np.where(column_frequency == np.max(column_frequency))[0][0]
+        clusters[cluster_index]['data'].append(data[i])
+
+
+# Plot clusters
+def show_clusters(clusters, radius):
+    colors = 10 * ['r', 'g', 'b', 'k', 'y']
     plt.figure(figsize=(5, 5))
     plt.xlim((-8, 8))
     plt.ylim((-8, 8))
     plt.scatter(X[:, 0], X[:, 1], s=20)
     theta = np.linspace(0, 2 * np.pi, 800)
-    for c in centroids:
-        plt.scatter(centroids[c][0], centroids[c][1], color='r', marker='x', s=30)
-        x, y = np.cos(theta) * radius + centroids[c][0], np.sin(theta) * radius + centroids[c][1]
-        plt.plot(x, y, linewidth=1)
+    for i in range(len(clusters)):
+        cluster = clusters[i]
+        data = np.array(cluster['data'])
+        plt.scatter(data[:, 0], data[:, 1], color=colors[i], s=20)
+        centroid = cluster['centroid']
+        plt.scatter(centroid[0], centroid[1], color=colors[i], marker='x', s=30)
+        x, y = np.cos(theta) * radius + centroid[0], np.sin(theta) * radius + centroid[1]
+        plt.plot(x, y, linewidth=1, color=colors[i])
     plt.show()
 
 
-radius = 2
-mean_shift(X, radius=radius)
+mean_shift(X, 2.5)
