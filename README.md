@@ -19,3 +19,8 @@ Sample codes of machine learning with python
 
 * k-means.py
 * k-means-sklearn.py
+
+
+### 5. Mean Shift
+
+* mean-shift.py
